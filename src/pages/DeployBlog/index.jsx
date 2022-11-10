@@ -52,17 +52,9 @@ const DeployBlog = () => {
         try {
             // 1. checking if subidentity is already registered
             setLoading('Checking subidentity...');
-            const {
-                data: { identityRegistered },
-            } = await axios.get(
-                `/v1/api/identity/identityRegistered?identity=${subidentity}.${walletIdentity.toLowerCase()}`,
-                // {
-                //     headers: {
-                //         'X-Point-Token': `Bearer ${await window.point.point.get_auth_token()}`,
-                //     },
-                // },
-            );
-            if (identityRegistered) {
+            const ikvEntries = await window.point.identity.ikvList({identity: `${subidentity}.${walletIdentity.toLowerCase()}`})
+            console.log(`ikvEntries.length: ${ikvEntries.length}`);
+            if (ikvEntries.length>0) {
                 // checking if there's a website already on this identity
                 const ikvset = await window.point.identity.ikvList({identity: `${subidentity}.${walletIdentity.toLowerCase()}`})
                 if (ikvset) {
@@ -84,31 +76,12 @@ const DeployBlog = () => {
                 const commPublicKeyPart2 = `0x${publicKey.slice(32).toString('hex')}`;
 
                 console.log(`identity: ${identity}, address: ${address}, commPublicKeyPart1: ${commPublicKeyPart1}, commPublicKeyPart2: ${commPublicKeyPart2}`)
-                // await axios.post(
-                //     '/v1/api/identity/sub/register',
-                //     {
-                //         subidentity,
-                //         parentIdentity: walletIdentity,
-                //         _csrf: window.localStorage.getItem('csrf_token'),
-                //     },
-                //     // {
-                //     //     headers: {
-                //     //         'X-Point-Token': `Bearer ${await window.point.point.get_auth_token()}`,
-                //     //     },
-                //     // },
-                // );
             }
 
-            // // 2. Download contract
-            // setLoading('Downloading blog contract...');
-            // const { data: contractFile } = await axios.get(
-            //     `/_storage/${CONTRACT_SOURCE_ID}`,
-            //     // {
-            //     //     headers: {
-            //     //         'X-Point-Token': `Bearer ${await window.point.point.get_auth_token()}`,
-            //     //     },
-            //     // },
-            // );
+            // 2. Download contract
+            setLoading('Downloading blog contract...');
+            const blob = await window.point.storage.getFile({id: CONTRACT_SOURCE_ID});
+            console.log(`Contract Data ******* ${await blob.text()}`);
 
             // // 3. Deploy contract
             // setLoading('Deploying blog contract...');
