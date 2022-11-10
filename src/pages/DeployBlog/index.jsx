@@ -15,6 +15,7 @@ import image4 from '../../assets/blog-images/blogsoftware-4.png';
 import image5 from '../../assets/blog-images/blogsoftware-5.png';
 import image6 from '../../assets/blog-images/blogsoftware-6.png';
 import './DeployBlog.css';
+import { LocalConvenienceStoreOutlined } from '@material-ui/icons';
 
 // TODO: do something better than hard-coding
 const VERSION = '0.1';
@@ -63,13 +64,9 @@ const DeployBlog = () => {
             );
             if (identityRegistered) {
                 // checking if there's a website already on this identity
-                const ikvset = await window.point.contract.call({
-                    contract: 'Identity',
-                    method: 'getIkvList',
-                    params: [`${subidentity}.${walletIdentity.toLowerCase()}`],
-                });
-                if (ikvset.data) {
-                    if (ikvset.data.find((el) => el[1] === 'zdns/routes')) {
+                const ikvset = await window.point.identity.ikvList({identity: `${subidentity}.${walletIdentity.toLowerCase()}`})
+                if (ikvset) {
+                    if (ikvset.find((el) => el[1] === 'zdns/routes')) {
                         setError(
                             'A website is already deployed on this address. Please, choose another subidentity',
                         );
@@ -80,92 +77,99 @@ const DeployBlog = () => {
             } else {
                 // deploy subidentity
                 setLoading('Registering subidentity...');
-                await axios.post(
-                    '/v1/api/identity/sub/register',
-                    {
-                        subidentity,
-                        parentIdentity: walletIdentity,
-                        _csrf: window.localStorage.getItem('csrf_token'),
-                    },
-                    // {
-                    //     headers: {
-                    //         'X-Point-Token': `Bearer ${await window.point.point.get_auth_token()}`,
-                    //     },
-                    // },
-                );
+
+                const { data } = await window.point.identity.me();
+                const { identity, address, publicKey } = data;
+                const commPublicKeyPart1 = `0x${publicKey.slice(0, 32).toString('hex')}`;
+                const commPublicKeyPart2 = `0x${publicKey.slice(32).toString('hex')}`;
+
+                console.log(`identity: ${identity}, address: ${address}, commPublicKeyPart1: ${commPublicKeyPart1}, commPublicKeyPart2: ${commPublicKeyPart2}`)
+                // await axios.post(
+                //     '/v1/api/identity/sub/register',
+                //     {
+                //         subidentity,
+                //         parentIdentity: walletIdentity,
+                //         _csrf: window.localStorage.getItem('csrf_token'),
+                //     },
+                //     // {
+                //     //     headers: {
+                //     //         'X-Point-Token': `Bearer ${await window.point.point.get_auth_token()}`,
+                //     //     },
+                //     // },
+                // );
             }
 
-            // 2. Download contract
-            setLoading('Downloading blog contract...');
-            const { data: contractFile } = await axios.get(
-                `/_storage/${CONTRACT_SOURCE_ID}`,
-                // {
-                //     headers: {
-                //         'X-Point-Token': `Bearer ${await window.point.point.get_auth_token()}`,
-                //     },
-                // },
-            );
+            // // 2. Download contract
+            // setLoading('Downloading blog contract...');
+            // const { data: contractFile } = await axios.get(
+            //     `/_storage/${CONTRACT_SOURCE_ID}`,
+            //     // {
+            //     //     headers: {
+            //     //         'X-Point-Token': `Bearer ${await window.point.point.get_auth_token()}`,
+            //     //     },
+            //     // },
+            // );
 
-            // 3. Deploy contract
-            setLoading('Deploying blog contract...');
-            const formData = new FormData();
-            formData.append('contractNames', '["Blog"]');
-            formData.append('version', VERSION);
-            formData.append(
-                'target',
-                `${subidentity}.${walletIdentity.toLowerCase()}`,
-            );
-            formData.append(
-                'dependencies',
-                '["@openzeppelin/contracts", "@openzeppelin/contracts-upgradeable"]',
-            );
-            formData.append(
-                'files',
-                new Blob([contractFile], { type: 'text/plain' }),
-            );
-            await axios.post(
-                '/point_api/deploy_upgradable_contracts',
-                formData,
-                // {
-                //     headers: {
-                //         'X-Point-Token': `Bearer ${await window.point.point.get_auth_token()}`,
-                //     },
-                // },
-            );
+            // // 3. Deploy contract
+            // setLoading('Deploying blog contract...');
+            // const formData = new FormData();
+            // formData.append('contractNames', '["Blog"]');
+            // formData.append('version', VERSION);
+            // formData.append(
+            //     'target',
+            //     `${subidentity}.${walletIdentity.toLowerCase()}`,
+            // );
+            // formData.append(
+            //     'dependencies',
+            //     '["@openzeppelin/contracts", "@openzeppelin/contracts-upgradeable"]',
+            // );
+            // formData.append(
+            //     'files',
+            //     new Blob([contractFile], { type: 'text/plain' }),
+            // );
+            // await axios.post(
+            //     '/point_api/deploy_upgradable_contracts',
+            //     formData,
+            //     // {
+            //     //     headers: {
+            //     //         'X-Point-Token': `Bearer ${await window.point.point.get_auth_token()}`,
+            //     //     },
+            //     // },
+            // );
 
-            // 4. update IKV rootDir
-            setLoading('Updating IKV...');
-            await axios.post(
-                '/v1/api/identity/ikvPut',
-                {
-                    identity: `${subidentity}.${walletIdentity.toLowerCase()}`,
-                    key: '::rootDir',
-                    value: ROOT_DIR_ID,
-                    _csrf: window.localStorage.getItem('csrf_token'),
-                },
-                // {
-                //     headers: {
-                //         'X-Point-Token': `Bearer ${await window.point.point.get_auth_token()}`,
-                //     },
-                // },
-            );
-            // 5. update IKV zdns
-            await axios.post(
-                '/v1/api/identity/ikvPut',
-                {
-                    identity: `${subidentity}.${walletIdentity.toLowerCase()}`,
-                    key: 'zdns/routes',
-                    value: ROUTES_FILE_ID,
-                    _csrf: window.localStorage.getItem('csrf_token'),
-                },
-                // {
-                //     headers: {
-                //         'X-Point-Token': `Bearer ${await window.point.point.get_auth_token()}`,
-                //     },
-                // },
-            );
-            setLoading(null);
-            setSuccess(true);
+            // // 4. update IKV rootDir
+            // setLoading('Updating IKV...');
+            // await axios.post(
+            //     '/v1/api/identity/ikvPut',
+            //     {
+            //         identity: `${subidentity}.${walletIdentity.toLowerCase()}`,
+            //         key: '::rootDir',
+            //         value: ROOT_DIR_ID,
+            //         _csrf: window.localStorage.getItem('csrf_token'),
+            //     },
+            //     // {
+            //     //     headers: {
+            //     //         'X-Point-Token': `Bearer ${await window.point.point.get_auth_token()}`,
+            //     //     },
+            //     // },
+            // );
+            // // 5. update IKV zdns
+            // await axios.post(
+            //     '/v1/api/identity/ikvPut',
+            //     {
+            //         identity: `${subidentity}.${walletIdentity.toLowerCase()}`,
+            //         key: 'zdns/routes',
+            //         value: ROUTES_FILE_ID,
+            //         _csrf: window.localStorage.getItem('csrf_token'),
+            //     },
+            //     // {
+            //     //     headers: {
+            //     //         'X-Point-Token': `Bearer ${await window.point.point.get_auth_token()}`,
+            //     //     },
+            //     // },
+            // );
+            // setLoading(null);
+            // setSuccess(true);
             setError(null);
         } catch (e) {
             setLoading(null);
