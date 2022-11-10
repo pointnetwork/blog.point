@@ -25,7 +25,7 @@ npm run build
 
 Now a `public` folder will be created containing the deployable built site. 
 
-### Clone the Point Network repo, install dependencies and start the node (connecting to Ynet)
+### Clone the Point Network repo, install dependencies and start the node (connecting to mainnet)
 
 Note that when you start the node it will use your key file found in your local point directory: `~/.point/keystore/key.json`. If you do not have this file then the node will not start. To create this file simply install [Point Network Alpha](https://pointnetwork.io/alpha). 
 
