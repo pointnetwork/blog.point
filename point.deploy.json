@@ -4,6 +4,6 @@
     "keyvalue": {},
     "contracts": [],
     "upgradable": true,
-    "pointSDKVersion": "0.0.10" ,
-    "pointNodeVersion": "0.1.78"
+    "pointSDKVersion": "0.0.41" ,
+    "pointNodeVersion": "0.4.25"
   }

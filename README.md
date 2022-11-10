@@ -1,20 +1,20 @@
-# Template Example Zapp
+# Blog Deployment Wizard dApp
 
-Welcome to the Template Example Zapp. This README is a basic guide to getting started with this application.
+Welcome to the Blog Deployment Wizard dApp. This README is a basic guide to getting started with this application.
 
 This is a React JS app. So you will need to install dependencies for it and run a build watcher if you want to develop it further.
 
 ## Main Libraries
 
-This template Zapp uses:
+This dApp uses:
 
 * [React JS](https://reactjs.org/) **v 17.x**
 * [React Bootstrap](https://react-bootstrap.github.io/) **v 2.x**
 * [Bootstrap](https://getbootstrap.com/) **v 5.x**
 
-## Deploy the site to YNet using Point Node
+## Deploy the site to mainnet using Point Node
 
-### Build the Zapp 
+### Build the dApp 
 
 Since this a React JS site it rquires to be built before it can be deployed as follows:
 
@@ -39,9 +39,9 @@ npm run start
 
 ### Run the Point Deployer CLI
 
-Note this command is run from the `pointnetwork` cloned repo (see above and assumes the Zapp is one level below the directoy where the command is run.
+Note this command is run from the `pointnetwork` cloned repo (see above and assumes the dApp is one level below the directoy where the command is run.
 
 ```
 cd pointnetwork
-./point deploy ../template.point --contracts
+./point deploy ../blog.point
 ``
