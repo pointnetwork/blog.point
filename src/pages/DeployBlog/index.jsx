@@ -52,9 +52,14 @@ const DeployBlog = () => {
         try {
             // 1. checking if subidentity is already registered
             setLoading('Checking subidentity...');
-            const ikvEntries = await window.point.identity.ikvList({identity: `${subidentity}.${walletIdentity.toLowerCase()}`})
-            console.log(`ikvEntries.length: ${ikvEntries.length}`);
-            if (ikvEntries.length>0) {
+
+            const canonicalIdentityRegistered  = await window.point.contract.call({
+                contract: 'Identity',
+                method: 'lowercaseToCanonicalIdentities',
+                params: [`${subidentity}.${walletIdentity.toLowerCase()}`],
+            });
+
+            if (canonicalIdentityRegistered.data) {
                 // checking if there's a website already on this identity
                 const ikvset = await window.point.identity.ikvList({identity: `${subidentity}.${walletIdentity.toLowerCase()}`})
                 if (ikvset) {
@@ -72,10 +77,14 @@ const DeployBlog = () => {
 
                 const { data } = await window.point.identity.me();
                 const { identity, address, publicKey } = data;
-                const commPublicKeyPart1 = `0x${publicKey.slice(0, 32).toString('hex')}`;
-                const commPublicKeyPart2 = `0x${publicKey.slice(32).toString('hex')}`;
+                const commPublicKeyPart1 = `0x${publicKey.slice(0, 64).toString('hex')}`;
+                const commPublicKeyPart2 = `0x${publicKey.slice(64).toString('hex')}`;
 
-                console.log(`identity: ${identity}, address: ${address}, commPublicKeyPart1: ${commPublicKeyPart1}, commPublicKeyPart2: ${commPublicKeyPart2}`)
+                await window.point.contract.call({
+                    contract: 'Identity',
+                    method: 'registerSubidentity',
+                    params: [subidentity, identity, address, commPublicKeyPart1, commPublicKeyPart2],
+                });
             }
 
             // 2. Download contract
