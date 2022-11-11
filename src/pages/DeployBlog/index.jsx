@@ -92,66 +92,48 @@ const DeployBlog = () => {
             const blob = await window.point.storage.getFile({id: CONTRACT_SOURCE_ID});
             console.log(`Contract Data ******* ${await blob.text()}`);
 
-            // // 3. Deploy contract
-            // setLoading('Deploying blog contract...');
-            // const formData = new FormData();
-            // formData.append('contractNames', '["Blog"]');
-            // formData.append('version', VERSION);
-            // formData.append(
-            //     'target',
-            //     `${subidentity}.${walletIdentity.toLowerCase()}`,
-            // );
-            // formData.append(
-            //     'dependencies',
-            //     '["@openzeppelin/contracts", "@openzeppelin/contracts-upgradeable"]',
-            // );
-            // formData.append(
-            //     'files',
-            //     new Blob([contractFile], { type: 'text/plain' }),
-            // );
-            // await axios.post(
-            //     '/point_api/deploy_upgradable_contracts',
-            //     formData,
-            //     // {
-            //     //     headers: {
-            //     //         'X-Point-Token': `Bearer ${await window.point.point.get_auth_token()}`,
-            //     //     },
-            //     // },
-            // );
+            // 3. Deploy contract
+            setLoading('Deploying blog contract...');
+            const formData = new FormData();
+            formData.append('contractNames', '["Blog"]');
+            formData.append('version', VERSION);
+            formData.append(
+                'target',
+                `${subidentity}.${walletIdentity.toLowerCase()}`,
+            );
+            formData.append(
+                'dependencies',
+                '["@openzeppelin/contracts", "@openzeppelin/contracts-upgradeable"]',
+            );
+            formData.append(
+                'files',
+                blob
+            );
+            await axios.post(
+                '/point_api/deploy_upgradable_contracts',
+                formData,
+            );
 
-            // // 4. update IKV rootDir
-            // setLoading('Updating IKV...');
-            // await axios.post(
-            //     '/v1/api/identity/ikvPut',
-            //     {
-            //         identity: `${subidentity}.${walletIdentity.toLowerCase()}`,
-            //         key: '::rootDir',
-            //         value: ROOT_DIR_ID,
-            //         _csrf: window.localStorage.getItem('csrf_token'),
-            //     },
-            //     // {
-            //     //     headers: {
-            //     //         'X-Point-Token': `Bearer ${await window.point.point.get_auth_token()}`,
-            //     //     },
-            //     // },
-            // );
-            // // 5. update IKV zdns
-            // await axios.post(
-            //     '/v1/api/identity/ikvPut',
-            //     {
-            //         identity: `${subidentity}.${walletIdentity.toLowerCase()}`,
-            //         key: 'zdns/routes',
-            //         value: ROUTES_FILE_ID,
-            //         _csrf: window.localStorage.getItem('csrf_token'),
-            //     },
-            //     // {
-            //     //     headers: {
-            //     //         'X-Point-Token': `Bearer ${await window.point.point.get_auth_token()}`,
-            //     //     },
-            //     // },
-            // );
-            // setLoading(null);
-            // setSuccess(true);
+            // 4. update IKV rootDir
+            setLoading('Updating IKV rootDir...');
+
+            await window.point.contract.call({
+                contract: 'Identity',
+                method: 'ikvPut',
+                params: [`${subidentity}.${walletIdentity.toLowerCase()}`, '::rootDir', ROOT_DIR_ID, '0.0.1'],
+            });
+
+            // 5. update IKV zdns
+            setLoading('Updating IKV zdns...');
+            
+            await window.point.contract.call({
+                contract: 'Identity',
+                method: 'ikvPut',
+                params: [`${subidentity}.${walletIdentity.toLowerCase()}`, 'zdns/routes', ROUTES_FILE_ID, '0.0.99'],
+            });
+
+            setLoading(null);
+            setSuccess(true);
             setError(null);
         } catch (e) {
             setLoading(null);
