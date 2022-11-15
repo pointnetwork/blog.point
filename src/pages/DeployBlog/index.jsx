@@ -15,17 +15,14 @@ import image4 from '../../assets/blog-images/blogsoftware-4.png';
 import image5 from '../../assets/blog-images/blogsoftware-5.png';
 import image6 from '../../assets/blog-images/blogsoftware-6.png';
 import './DeployBlog.css';
-import { LocalConvenienceStoreOutlined } from '@material-ui/icons';
 
 // TODO: do something better than hard-coding
 const VERSION = '0.1';
 const ROOT_DIR_ID =
-    '29bf6bf64079ea189e92433ece0baa29ee686040f8a7643c421c7826422547c9'
-    //'a867d811b3927289b4e66e219baaac4d14078275d4b7c9181690115a6a03c34e';
+    '2d1cd9f82b264ea0da4bf1ccc04040ae46b5ed121ec1a1673a0dbc73def87cd0'
     // '6ce5c3f525128f4173cd4931870b28d05280d66bd206826be1f23242d05c94bb';
 const ROUTES_FILE_ID =
     '8f0764496bfaa6dfcca4ce74f1cacc32b5f7798dfe7db9654182c5c1860a2272'
-    //'8f0764496bfaa6dfcca4ce74f1cacc32b5f7798dfe7db9654182c5c1860a2272';
     // '5f38f36718c426e74ded142347ecc4310e8eb4755c31ce06bcecd26cdbfe7b41';
 const CONTRACT_SOURCE_ID =
     '042a2609875d2f5b628896adfc3affec2fd8aaf104f8824918cd94086872dc66';
@@ -61,7 +58,7 @@ const DeployBlog = () => {
 
             if (canonicalIdentityRegistered.data) {
                 // checking if there's a website already on this identity
-                const ikvset = await window.point.identity.ikvList({identity: `${subidentity}.${walletIdentity.toLowerCase()}`})
+                const ikvset = await window.point.contract.call({contract: 'Identity', method: 'getIkvList', params: [`${subidentity}.${walletIdentity.toLowerCase()}`]});
                 if (ikvset) {
                     if (ikvset.find((el) => el[1] === 'zdns/routes')) {
                         setError(
@@ -90,7 +87,6 @@ const DeployBlog = () => {
             // 2. Download contract
             setLoading('Downloading blog contract...');
             const blob = await window.point.storage.getFile({id: CONTRACT_SOURCE_ID});
-            console.log(`Contract Data ******* ${await blob.text()}`);
 
             // 3. Deploy contract
             setLoading('Deploying blog contract...');
