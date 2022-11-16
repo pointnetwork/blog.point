@@ -15,17 +15,18 @@ import image4 from '../../assets/blog-images/blogsoftware-4.png';
 import image5 from '../../assets/blog-images/blogsoftware-5.png';
 import image6 from '../../assets/blog-images/blogsoftware-6.png';
 import './DeployBlog.css';
+import { ethers } from 'ethers';
+import blogabi from "../../assets/blogabi.json";
+import blogbytecode from "../../assets/blogbytecode.json";
 
 // TODO: do something better than hard-coding
 const VERSION = '0.1';
 const ROOT_DIR_ID =
-    '2d1cd9f82b264ea0da4bf1ccc04040ae46b5ed121ec1a1673a0dbc73def87cd0'
-    // '6ce5c3f525128f4173cd4931870b28d05280d66bd206826be1f23242d05c94bb';
+    '344d8fd941a1b827244cfa2ba10950a1ea2b0639b456236f87a5d17765014fc3	'
 const ROUTES_FILE_ID =
     '8f0764496bfaa6dfcca4ce74f1cacc32b5f7798dfe7db9654182c5c1860a2272'
-    // '5f38f36718c426e74ded142347ecc4310e8eb4755c31ce06bcecd26cdbfe7b41';
-const CONTRACT_SOURCE_ID =
-    '042a2609875d2f5b628896adfc3affec2fd8aaf104f8824918cd94086872dc66';
+const CONTRACT_ABI_ID = 
+    'f971a0c90624351ee5beb6c28fea24f18e436de8ecd282069b64d4cbea289384'
 
 const BLOG_IMAGES = [
     { caption: 'Create blog posts', img: image1 },
@@ -50,15 +51,17 @@ const DeployBlog = () => {
             // 1. checking if subidentity is already registered
             setLoading('Checking subidentity...');
 
-            const canonicalIdentityRegistered  = await window.point.contract.call({
+            const {data: identityRegistered}  = await window.point.contract.call({
                 contract: 'Identity',
                 method: 'lowercaseToCanonicalIdentities',
                 params: [`${subidentity}.${walletIdentity.toLowerCase()}`],
             });
 
-            if (canonicalIdentityRegistered.data) {
+            console.log('subidentity:', identityRegistered);
+
+            if (identityRegistered) {
                 // checking if there's a website already on this identity
-                const ikvset = await window.point.contract.call({contract: 'Identity', method: 'getIkvList', params: [`${subidentity}.${walletIdentity.toLowerCase()}`]});
+                const {data: ikvset} = await window.point.contract.call({contract: 'Identity', method: 'getIkvList', params: [`${subidentity}.${walletIdentity.toLowerCase()}`]});
                 if (ikvset) {
                     if (ikvset.find((el) => el[1] === 'zdns/routes')) {
                         setError(
@@ -85,30 +88,39 @@ const DeployBlog = () => {
             }
 
             // 2. Download contract
-            setLoading('Downloading blog contract...');
-            const blob = await window.point.storage.getFile({id: CONTRACT_SOURCE_ID});
+            // setLoading('Downloading blog contract bytecode...');
+            // const bytecodeBlob = await window.point.storage.getFile({id: CONTRACT_BYTECODE_ID});
+            // const bytecode = await bytecodeBlob.text();
+            // abi = JSON.parse(fs.readFileSync('storage.abi').toString());
 
             // 3. Deploy contract
             setLoading('Deploying blog contract...');
-            const formData = new FormData();
-            formData.append('contractNames', '["Blog"]');
-            formData.append('version', VERSION);
-            formData.append(
-                'target',
-                `${subidentity}.${walletIdentity.toLowerCase()}`,
-            );
-            formData.append(
-                'dependencies',
-                '["@openzeppelin/contracts", "@openzeppelin/contracts-upgradeable"]',
-            );
-            formData.append(
-                'files',
-                blob
-            );
-            await axios.post(
-                '/point_api/deploy_upgradable_contracts',
-                formData,
-            );
+
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            const signer0 = provider.getSigner(0);
+            // const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+
+            console.log('provider: ', provider);
+            // console.log('accounts: ', accounts);
+            console.log('bytecode: ', blogbytecode.bytecode);
+            console.log('abi: ', blogabi);
+
+            // const account = ethers.wallet.connect(provider);
+            const blogContract = new ethers.ContractFactory(blogabi, blogbytecode.bytecode, signer0);
+            const contract = await blogContract.deploy();
+            await contract.deployed();
+            
+            console.log('contract.address: ' + contract.address);
+            console.log('contract.deployTransaction: ' + contract.deployTransaction);
+
+            // 5. update IKV zdns
+            setLoading('Updating IKV contract address...');
+            
+            await window.point.contract.call({
+                contract: 'Identity',
+                method: 'ikvPut',
+                params: [`${subidentity}.${walletIdentity.toLowerCase()}`, 'zweb/contracts/address/Blog', contract.address, VERSION],
+            });
 
             // 4. update IKV rootDir
             setLoading('Updating IKV rootDir...');
@@ -116,7 +128,7 @@ const DeployBlog = () => {
             await window.point.contract.call({
                 contract: 'Identity',
                 method: 'ikvPut',
-                params: [`${subidentity}.${walletIdentity.toLowerCase()}`, '::rootDir', ROOT_DIR_ID, '0.0.1'],
+                params: [`${subidentity}.${walletIdentity.toLowerCase()}`, '::rootDir', ROOT_DIR_ID, VERSION],
             });
 
             // 5. update IKV zdns
@@ -125,7 +137,16 @@ const DeployBlog = () => {
             await window.point.contract.call({
                 contract: 'Identity',
                 method: 'ikvPut',
-                params: [`${subidentity}.${walletIdentity.toLowerCase()}`, 'zdns/routes', ROUTES_FILE_ID, '0.0.99'],
+                params: [`${subidentity}.${walletIdentity.toLowerCase()}`, 'zdns/routes', ROUTES_FILE_ID, VERSION],
+            });
+
+            // 5. update abi id
+            setLoading('Updating abi id...');
+
+            await window.point.contract.call({
+                contract: 'Identity',
+                method: 'ikvPut',
+                params: [`${subidentity}.${walletIdentity.toLowerCase()}`, 'zweb/contracts/abi/Blog', CONTRACT_ABI_ID, VERSION],
             });
 
             setLoading(null);
